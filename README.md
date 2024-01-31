@@ -3,6 +3,43 @@ The first script is for sentiment analysis on Google. The second script is for f
 
 For the Sentiment.py tool, 
 
+      from transformers import pipeline
+      import numpy as np
+      import pandas as pd
+      import seaborn as sns
+      import matplotlib.pyplot as plt
+      from sklearn.metrics import roc_auc_score, f1_score, confusion_matrix
+      from sklearn.model_selection import train_test_split
+
+
+      # create pipeline for sentiment analysis
+      classification = pipeline('sentiment-analysis')
+      type(classification)
+
+      # read data into DataFrame
+      df = pd.read_csv("google.csv")
+      # set the columns
+      df.columns = ['Links', 'Name', 'Time', 'Review', 'Owner Response']
+      # drop null values
+      df = df.dropna()
+      # print first 5 rows
+      df.head()
+
+      results = df['Review'].apply(classification)
+
+      df['Sentiment'] = [result[0]['label'] for result in results]
+      df['Score'] = [result[0]['score'] for result in results]
+
+      df.to_csv('google_sentiment.csv', columns=['Name', 'Time', 'Review', 'Sentiment', 'Owner Response'], index=False)
+
+      # filter DataFrame by negative sentiment and save as new csv file
+      df_negative = df.query('Sentiment == "NEGATIVE"')
+      df_negative.to_csv('google_negative.csv', columns=['Name', 'Time', 'Review', 'Sentiment', 'Owner Response'], index=False)
+
+      print ("done")
+
+
+
 The first line imports the pipeline function from the transformers library, which is a high-level API for using pre-trained models for natural language processing tasks
 
 The next four lines import some other libraries that are used for numerical computation, data analysis, data visualization, and machine learning
@@ -33,6 +70,50 @@ The last line prints "done" to indicate that the script has finished running.
 
 
 For the FakeReview.py tool, 
+
+      # Import the required libraries
+      import pandas as pd
+      from torch.utils.data import Dataset
+      from transformers import pipeline
+
+      # Create pipeline for fake review detection
+      fake_review_detection = pipeline('text-classification', model='astrosbd/fake-reviews-distilbert')
+
+      # Read the csv file into a DataFrame
+      df = pd.read_csv('google.csv')
+
+      # Drop any rows that have missing values
+      df = df.dropna()
+
+      # Shuffle the DataFrame for randomness
+      df = df.sample(frac=1, random_state=42)
+
+      # Initialize empty lists to store results
+      scores = []
+      labels = []
+
+      # Loop over the rows of the DataFrame
+      for index, row in df.iterrows():
+          # Get the review from the current row
+          review = row['Review']
+          # Get the model's output for the current review
+          result = fake_review_detection(review)
+          # Extract the score and label from the output
+          score = result[0]['score']
+          label = result[0]['label']
+          # Append the score and label to the respective lists
+          scores.append(score)
+          labels.append(label)
+
+      # Add the scores and labels as new columns to the DataFrame
+      df['Score'] = scores
+      df['Label'] = labels
+
+      # Save DataFrame with new columns as a new csv file
+      df.to_csv('google_new.csv', columns=['Review', 'Score', 'Label'], index=False)
+
+      print ("done")
+
 
 
 The first three lines import the required libraries for the script. pandas is a library for data analysis and manipulation. torch.utils.data is a module for creating and handling data sets. transformers is a library for using pre-trained models for natural language processing tasks
